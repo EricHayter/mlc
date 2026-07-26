@@ -10,7 +10,7 @@
  * Usage: construct, then bracket the region of interest with start()/stop().
  * The counter follows the thread, so pin before measuring. */
 class CycleCounter {
-public:
+  public:
     /* Opens (but does not yet start) a cycle counter for the calling thread,
      * restricted to the given CPU. Counts user-space cycles only. Aborts if
      * the counter can't be opened -- most likely a permissions issue, which
@@ -22,17 +22,18 @@ public:
 
     /* Delete copy and move semantics to keep this simple but could implement
      * in the future */
-    CycleCounter(const CycleCounter&) = delete;
-    CycleCounter& operator=(const CycleCounter&) = delete;
+    CycleCounter(const CycleCounter &) = delete;
+    CycleCounter &operator=(const CycleCounter &) = delete;
 
-    CycleCounter(CycleCounter&&) = delete;
-    CycleCounter& operator=(CycleCounter&&) = delete;
+    CycleCounter(CycleCounter &&) = delete;
+    CycleCounter &operator=(CycleCounter &&) = delete;
 
     /* Resets the count to zero and begins counting. */
     void start();
 
     /* Stops counting and returns the cycles elapsed since the last start(). */
     std::size_t stop();
-private:
-    int perf_fd_m{};  // perf_event fd, read for the running cycle count
+
+  private:
+    int perf_fd_m{}; // perf_event fd, read for the running cycle count
 };

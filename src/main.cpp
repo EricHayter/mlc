@@ -5,12 +5,10 @@
 
 #include "benchmark.h"
 
-int main(int argc, const char** argv) {
+int main(int argc, const char **argv) {
     argparse::ArgumentParser program("mlc");
 
-    program.add_argument("-H", "--huge")
-        .help("Use huge pages")
-        .flag();
+    program.add_argument("-H", "--huge").help("Use huge pages").flag();
 
     program.add_argument("--id")
         .required()
@@ -19,8 +17,7 @@ int main(int argc, const char** argv) {
 
     try {
         program.parse_args(argc, argv);
-    }
-    catch (const std::exception& err) {
+    } catch (const std::exception &err) {
         std::cerr << err.what() << '\n';
         std::cerr << program;
         return 1;
@@ -34,11 +31,15 @@ int main(int argc, const char** argv) {
      * exploding in count or racing past the interesting boundaries. The
      * top end (128 MiB) is well beyond the 3 MiB L3 to capture DRAM. */
     constexpr std::size_t num_jumps = 1e8;
-    std::cout << "buffer size (kb), average latency per load (ns), cycles per load\n";
+    std::cout
+        << "buffer size (kb), average latency per load (ns), cycles per load\n";
     for (std::size_t buffer_size_kb = 8; buffer_size_kb <= 128 * 1024;
          buffer_size_kb += buffer_size_kb / 4) {
-        MmapArray<Node> buffer = generate_buffer(buffer_size_kb, use_huge_pages);
-        auto [ns_per_load, cycles_per_load] = pointer_chase(cpu_id, buffer, num_jumps);
-        std::cout << std::format("{}, {}, {}\n", buffer_size_kb, ns_per_load, cycles_per_load);
+        MmapArray<Node> buffer =
+            generate_buffer(buffer_size_kb, use_huge_pages);
+        auto [ns_per_load, cycles_per_load] =
+            pointer_chase(cpu_id, buffer, num_jumps);
+        std::cout << std::format("{}, {}, {}\n", buffer_size_kb, ns_per_load,
+                                 cycles_per_load);
     }
 }
