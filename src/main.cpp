@@ -3,7 +3,7 @@
 #include <format>
 #include <iostream>
 
-std::size_t benchmark(std::size_t buffer_size_kb, bool use_huge_pages);
+#include "benchmark.h"
 
 int main(int argc, const char** argv) {
     argparse::ArgumentParser program("mlc");
@@ -26,8 +26,10 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    for (std::size_t buffer_size_kb = 100; buffer_size_kb < 1024; buffer_size_kb += 100) {
-        std::size_t latency_ns = benchmark(buffer_size_kb, true);
+    const int cpu_id = program.get<int>("--id");
+
+    for (std::size_t buffer_size_kb = 100; buffer_size_kb < 1000; buffer_size_kb += 100) {
+        std::size_t latency_ns = benchmark(cpu_id, buffer_size_kb, true);
         std::cout << std::format("{}, {}\n", buffer_size_kb, latency_ns);
     }
 }
