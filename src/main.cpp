@@ -26,10 +26,16 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
+    const bool use_huge_pages = program.get<bool>("--huge");
     const int cpu_id = program.get<int>("--id");
 
-    for (std::size_t buffer_size_kb = 100; buffer_size_kb < 1000; buffer_size_kb += 100) {
-        std::size_t latency_ns = benchmark(cpu_id, buffer_size_kb, true);
+    /* Grow the buffer geometrically (~1.25x per step) so the points are
+     * evenly spaced on a log axis and span L1 through DRAM without either
+     * exploding in count or racing past the interesting boundaries. The
+     * top end (128 MiB) is well beyond the 3 MiB L3 to capture DRAM. */
+    for (std::size_t buffer_size_kb = 8; buffer_size_kb <= 128 * 1024;
+         buffer_size_kb += buffer_size_kb / 4) {
+        std::size_t latency_ns = benchmark(cpu_id, buffer_size_kb, use_huge_pages);
         std::cout << std::format("{}, {}\n", buffer_size_kb, latency_ns);
     }
 }
