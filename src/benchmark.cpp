@@ -15,10 +15,7 @@
 
 std::size_t benchmark(int cpu_id, std::size_t buffer_size_kb, bool use_huge_pages) {
     pin_to_cpu(cpu_id);
-
-    /* Keep the buffer alive for the whole measurement; it frees itself
-     * (munmap) when it goes out of scope at the end of this function. */
-    MmapArray buffer = generate_buffer(buffer_size_kb, use_huge_pages);
+    MmapArray<Node> buffer = generate_buffer(buffer_size_kb, use_huge_pages);
     constexpr std::size_t num_jumps = 1e8;
     return pointer_chase(buffer, num_jumps);
 }
@@ -34,13 +31,13 @@ void pin_to_cpu(int cpu_id)
     }
 }
 
-MmapArray generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages)
+MmapArray<Node> generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages)
 {
     /* allocate enough nodes such that we use approximately buffer_size_kb kb */
     const std::size_t num_nodes = buffer_size_kb * 1024 / sizeof(Node);
 
     /* MmapArray owns the mapping and munmaps it on destruction. */
-    MmapArray buffer(num_nodes, use_huge_pages);
+    MmapArray<Node> buffer(num_nodes, use_huge_pages);
     std::span<Node> nodes = buffer.span();
 
     /* to avoid the hardware prefetcher from picking up on any patterns in
@@ -67,7 +64,8 @@ std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
 {
     const Node* node = &nodes[0];
 
-    /* load all of the nodes into the lower layer caches (L3, DRAM, etc...) */
+    /* walk every node once to pull them into the lower levels of the memory
+     * hierarchy (L3, DRAM, etc...) before we start timing */
     for (std::size_t i = 0; i < nodes.size(); i++) {
         node = node->next;
     }
@@ -82,7 +80,7 @@ std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
     const auto stop = clock.now();
     const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 
-    /* Shouldn't happen this is just to prevent the compiler from optimizing
+    /* Shouldn't happen; this is just to prevent the compiler from optimizing
      * out node and the jumps */
     if (node == nullptr) {
         std::cerr << "Pointer chase failed due to missing cycle in buffer\n";
