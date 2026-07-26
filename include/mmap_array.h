@@ -28,6 +28,7 @@ public:
 
     /* Pass an MmapArray straight into anything taking a std::span<Node>. */
     operator std::span<Node>() noexcept { return {ptr_m, count_m}; }
+    operator std::span<const Node>() noexcept { return {ptr_m, count_m}; }
 
     Node* data() noexcept { return ptr_m; }
     const Node* data() const noexcept { return ptr_m; }
