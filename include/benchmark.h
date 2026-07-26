@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <span>
+#include <utility>
 
 #include "mmap_array.h"
 
@@ -12,11 +13,6 @@ struct alignas(64) Node {
     Node* next;
 };
 
-/* Performs a benchmark on the given CPU to determine read latency parametrized
- * by the buffer size it accesses, and whether or not huge pages will be used
- * (to minimize the effect of TLB misses on averages). */
-std::pair<std::size_t, std::size_t> benchmark(int cpu, std::size_t buffer_size_kb, bool use_huge_pages);
-
 /* Pin currently running thread to the given CPU */
 void pin_to_cpu(int cpu_id);
 
@@ -25,6 +21,7 @@ void pin_to_cpu(int cpu_id);
  * Can use huge pages if required. */
 MmapArray<Node> generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages);
 
-/* Given an array of nodes, performs pointer chasing for a total of num_jumps,
- * then returns the average latency of each load (in ns). */
+/* Pins to the given CPU, then performs pointer chasing over nodes for a total
+ * of num_jumps. Returns the average per-load cost as a { nanoseconds, core
+ * cycles } pair. */
 std::pair<std::size_t, std::size_t> pointer_chase(int cpu, std::span<const Node> nodes, std::size_t num_jumps);

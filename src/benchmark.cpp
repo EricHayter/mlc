@@ -14,12 +14,6 @@
 #include <ranges>
 #include <vector>
 
-std::pair<std::size_t, std::size_t> benchmark(int cpu, std::size_t buffer_size_kb, bool use_huge_pages) {
-    MmapArray<Node> buffer = generate_buffer(buffer_size_kb, use_huge_pages);
-    constexpr std::size_t num_jumps = 1e8;
-    return pointer_chase(cpu, buffer, num_jumps);
-}
-
 void pin_to_cpu(int cpu_id)
 {
     cpu_set_t cpu_set{};

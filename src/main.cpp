@@ -33,10 +33,12 @@ int main(int argc, const char** argv) {
      * evenly spaced on a log axis and span L1 through DRAM without either
      * exploding in count or racing past the interesting boundaries. The
      * top end (128 MiB) is well beyond the 3 MiB L3 to capture DRAM. */
+    constexpr std::size_t num_jumps = 1e8;
     std::cout << "buffer size (kb), average latency per load (ns), cycles per load\n";
     for (std::size_t buffer_size_kb = 8; buffer_size_kb <= 128 * 1024;
          buffer_size_kb += buffer_size_kb / 4) {
-        auto [ns_per_load, cycles_per_load] = benchmark(cpu_id, buffer_size_kb, use_huge_pages);
+        MmapArray<Node> buffer = generate_buffer(buffer_size_kb, use_huge_pages);
+        auto [ns_per_load, cycles_per_load] = pointer_chase(cpu_id, buffer, num_jumps);
         std::cout << std::format("{}, {}, {}\n", buffer_size_kb, ns_per_load, cycles_per_load);
     }
 }
