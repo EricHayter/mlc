@@ -15,7 +15,7 @@ class CycleCounter {
      * restricted to the given CPU. Counts user-space cycles only. Aborts if
      * the counter can't be opened -- most likely a permissions issue, which
      * needs kernel.perf_event_paranoid <= 2 (see /proc/sys/kernel). */
-    CycleCounter(int cpu);
+    explicit CycleCounter(int cpu);
 
     /* Closes the underlying perf_event file descriptor. */
     ~CycleCounter();

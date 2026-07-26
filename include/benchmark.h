@@ -25,5 +25,5 @@ MmapArray<Node> generate_buffer(std::size_t buffer_size_kb,
 /* Pins to the given CPU, then performs pointer chasing over nodes for a total
  * of num_jumps. Returns the average per-load cost as a { nanoseconds, core
  * cycles } pair. */
-std::pair<std::size_t, std::size_t>
-pointer_chase(int cpu, std::span<const Node> nodes, std::size_t num_jumps);
+std::pair<double, double> pointer_chase(int cpu, std::span<const Node> nodes,
+                                        std::size_t num_jumps);
