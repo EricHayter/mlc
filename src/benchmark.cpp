@@ -1,6 +1,7 @@
 #include "benchmark.h"
 
 #include "mmap_array.h"
+#include "cycle_counter.h"
 
 #include <sched.h>
 
@@ -13,11 +14,10 @@
 #include <ranges>
 #include <vector>
 
-std::size_t benchmark(int cpu_id, std::size_t buffer_size_kb, bool use_huge_pages) {
-    pin_to_cpu(cpu_id);
+std::pair<std::size_t, std::size_t> benchmark(int cpu, std::size_t buffer_size_kb, bool use_huge_pages) {
     MmapArray<Node> buffer = generate_buffer(buffer_size_kb, use_huge_pages);
     constexpr std::size_t num_jumps = 1e8;
-    return pointer_chase(buffer, num_jumps);
+    return pointer_chase(cpu, buffer, num_jumps);
 }
 
 void pin_to_cpu(int cpu_id)
@@ -60,23 +60,23 @@ MmapArray<Node> generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages)
     return buffer;
 }
 
-std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
+std::pair<std::size_t, std::size_t> pointer_chase(int cpu, std::span<const Node> nodes, std::size_t num_jumps)
 {
-    const Node* node = &nodes[0];
+    pin_to_cpu(cpu);
 
-    /* walk every node once to pull them into the lower levels of the memory
-     * hierarchy (L3, DRAM, etc...) before we start timing */
-    for (std::size_t i = 0; i < nodes.size(); i++) {
-        node = node->next;
-    }
+    CycleCounter cycle_counter(cpu);
+
+    const Node* node = &nodes[0];
 
     std::chrono::steady_clock clock;
     const auto start = clock.now();
+    cycle_counter.start();
 
     for (std::size_t i = 0; i < num_jumps; i++) {
         node = node->next;
     }
 
+    const std::size_t cycle_count = cycle_counter.stop();
     const auto stop = clock.now();
     const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 
@@ -87,5 +87,5 @@ std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
         std::abort();
     }
 
-    return duration.count() / num_jumps;
+    return { duration.count() / num_jumps, cycle_count / num_jumps };
 }
