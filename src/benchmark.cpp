@@ -19,15 +19,8 @@ std::size_t benchmark(int cpu_id, std::size_t buffer_size_kb, bool use_huge_page
     /* Keep the buffer alive for the whole measurement; it frees itself
      * (munmap) when it goes out of scope at the end of this function. */
     MmapArray buffer = generate_buffer(buffer_size_kb, use_huge_pages);
-    std::span<Node> nodes = buffer.span();
-    const std::size_t num_jumps = nodes.size() * 10000;
-
-    std::chrono::steady_clock clock;
-    const auto start = clock.now();
-    pointer_chase(nodes, num_jumps);
-    const auto stop = clock.now();
-    const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
-    return duration.count() / num_jumps;
+    constexpr std::size_t num_jumps = 1e8;
+    return pointer_chase(buffer, num_jumps);
 }
 
 void pin_to_cpu(int cpu_id)
@@ -70,12 +63,24 @@ MmapArray generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages)
     return buffer;
 }
 
-void pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
+std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
 {
     const Node* node = &nodes[0];
+
+    /* load all of the nodes into the lower layer caches (L3, DRAM, etc...) */
+    for (std::size_t i = 0; i < nodes.size(); i++) {
+        node = node->next;
+    }
+
+    std::chrono::steady_clock clock;
+    const auto start = clock.now();
+
     for (std::size_t i = 0; i < num_jumps; i++) {
         node = node->next;
     }
+
+    const auto stop = clock.now();
+    const auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 
     /* Shouldn't happen this is just to prevent the compiler from optimizing
      * out node and the jumps */
@@ -83,4 +88,6 @@ void pointer_chase(std::span<const Node> nodes, std::size_t num_jumps)
         std::cerr << "Pointer chase failed due to missing cycle in buffer\n";
         std::abort();
     }
+
+    return duration.count() / num_jumps;
 }

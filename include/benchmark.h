@@ -15,4 +15,4 @@ void pin_to_cpu(int cpu_id);
 
 MmapArray generate_buffer(std::size_t buffer_size_kb, bool use_huge_pages);
 
-void pointer_chase(std::span<const Node> nodes, std::size_t num_jumps);
+std::size_t pointer_chase(std::span<const Node> nodes, std::size_t num_jumps);
