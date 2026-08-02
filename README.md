@@ -85,6 +85,31 @@ Output is CSV on stdout, so you can redirect it straight to a file for plotting:
 ./build/src/mlc --id 0 > latencies.csv
 ```
 
+## Viewing results
+
+The `web/` directory holds a small self-contained viewer that plots the latency
+curve (log-scaled buffer size, with `ns` and `cycles` on separate axes) so the
+cache-hierarchy plateaus are easy to read. It has no build step and no runtime
+dependencies beyond a browser.
+
+The quickest path is to pipe `mlc` straight into `scripts/mlc-view`, which
+inlines the data into a standalone HTML report and opens it in your browser — no
+saving or file-picking:
+
+```sh
+./build/src/mlc --id 0 | scripts/mlc-view
+```
+
+You can also point it at a saved CSV, or keep the generated report:
+
+```sh
+scripts/mlc-view latencies.csv                 # from a file
+./build/src/mlc --id 0 | scripts/mlc-view -o report.html   # write a shareable file
+```
+
+Prefer to skip the wrapper? Open `web/index.html` directly and drop a CSV onto
+the page, choose one with the file picker, paste it in, or hit **Load sample**.
+
 ## Huge pages
 
 By default the buffer is backed by ordinary 4 KiB pages, so at larger sizes the

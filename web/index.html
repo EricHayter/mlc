@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mlc &mdash; latency viewer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>mlc latency viewer</h1>
+  <p class="sub">Memory load latency across the cache hierarchy.</p>
+</header>
+
+<main>
+  <section id="drop" class="dropzone">
+    <p><strong>Drop a <code>latency.csv</code> here</strong>, or</p>
+    <div class="controls">
+      <label class="btn">
+        Choose file&hellip;
+        <input id="file" type="file" accept=".csv,text/csv" hidden>
+      </label>
+      <button id="sample" class="btn ghost" type="button">Load sample</button>
+    </div>
+    <details class="paste">
+      <summary>&hellip; or paste CSV</summary>
+      <textarea id="pastebox" rows="6" placeholder="buffer size (kb), average latency per load (ns), cycles per load&#10;8, 1.66, 4.13&#10;..."></textarea>
+      <button id="pasteload" class="btn" type="button">Plot pasted data</button>
+    </details>
+    <p id="status" class="status"></p>
+  </section>
+
+  <section id="chartwrap" class="chartwrap" hidden>
+    <div class="toolbar">
+      <span id="meta" class="meta"></span>
+    </div>
+    <div class="canvasbox"><canvas id="chart"></canvas></div>
+  </section>
+</main>
+
+<!-- mlc-view injects piped CSV between these tags; empty in the static page. -->
+<script id="mlc-data" type="text/csv"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

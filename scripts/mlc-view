@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Render mlc CSV output as a chart in the browser, with zero file juggling.
+
+Reads CSV from stdin (or a file argument), inlines it into a fully
+self-contained copy of web/index.html, writes that to a temp file, and opens
+it in the default browser.
+
+    build/src/mlc --id 0 | scripts/mlc-view      # pipe straight from mlc
+    scripts/mlc-view latency.csv                 # or from a saved file
+    build/src/mlc --id 0 | scripts/mlc-view -o report.html   # keep the file
+"""
+
+import argparse
+import pathlib
+import subprocess
+import sys
+import tempfile
+import webbrowser
+
+WEB = pathlib.Path(__file__).resolve().parent.parent / "web"
+
+
+def js_safe(text: str) -> str:
+    """Prevent an embedded </script> from closing the inlining <script> tag."""
+    return text.replace("</", "<\\/")
+
+
+def build_page(csv_text: str) -> str:
+    html = (WEB / "index.html").read_text()
+    css = (WEB / "style.css").read_text()
+    chart_js = (WEB / "vendor" / "chart.umd.min.js").read_text()
+    app_js = (WEB / "app.js").read_text()
+
+    html = html.replace(
+        '<link rel="stylesheet" href="style.css">',
+        f"<style>\n{css}\n</style>",
+    )
+    html = html.replace(
+        '<script src="vendor/chart.umd.min.js"></script>',
+        f"<script>\n{js_safe(chart_js)}\n</script>",
+    )
+    html = html.replace(
+        '<script src="app.js"></script>',
+        f"<script>\n{js_safe(app_js)}\n</script>",
+    )
+    html = html.replace(
+        '<script id="mlc-data" type="text/csv"></script>',
+        f'<script id="mlc-data" type="text/csv">\n{js_safe(csv_text)}\n</script>',
+    )
+    return html
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="View mlc CSV output in the browser.")
+    ap.add_argument("csv", nargs="?", help="CSV file (default: read stdin)")
+    ap.add_argument("-o", "--output", help="write the HTML here instead of a temp file")
+    ap.add_argument("--no-open", action="store_true", help="don't launch a browser")
+    args = ap.parse_args()
+
+    if args.csv:
+        csv_text = pathlib.Path(args.csv).read_text()
+    elif not sys.stdin.isatty():
+        csv_text = sys.stdin.read()
+    else:
+        ap.error("no input: pipe mlc output in, or pass a CSV file")
+
+    if csv_text.strip() == "":
+        ap.error("input was empty")
+
+    page = build_page(csv_text)
+
+    if args.output:
+        out = pathlib.Path(args.output)
+        out.write_text(page)
+    else:
+        fd = tempfile.NamedTemporaryFile(
+            prefix="mlc-", suffix=".html", delete=False, mode="w"
+        )
+        fd.write(page)
+        fd.close()
+        out = pathlib.Path(fd.name)
+
+    print(f"wrote {out}", file=sys.stderr)
+    if not args.no_open:
+        # webbrowser prefers a real GUI browser; fall back to xdg-open.
+        if not webbrowser.open(out.as_uri()):
+            subprocess.run(["xdg-open", str(out)], check=False)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

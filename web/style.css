@@ -1,0 +1,78 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 24px;
+  font: 15px/1.5 system-ui, sans-serif;
+  color: #222;
+}
+
+h1 { margin: 0; font-size: 20px; }
+.sub { margin: 4px 0 24px; color: #666; }
+
+.dropzone {
+  border: 1px dashed #bbb;
+  padding: 28px;
+  text-align: center;
+}
+.dropzone.over { border-color: #333; }
+
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.btn {
+  display: inline-block;
+  cursor: pointer;
+  border: 1px solid #bbb;
+  background: #f4f4f4;
+  color: #222;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.btn.ghost { background: transparent; }
+
+.paste {
+  margin-top: 16px;
+  text-align: left;
+}
+.paste summary {
+  cursor: pointer;
+  color: #666;
+  text-align: center;
+}
+textarea {
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #bbb;
+  font-family: monospace;
+  resize: vertical;
+}
+
+.status {
+  margin: 12px 0 0;
+  min-height: 1.2em;
+  color: #666;
+}
+.status.error { color: #c00; }
+
+.chartwrap {
+  margin-top: 20px;
+  border: 1px solid #ddd;
+  padding: 16px;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.meta { color: #666; font-size: 13px; }
+.canvasbox { position: relative; height: 460px; }
+
+code { color: #b5540a; }
