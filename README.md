@@ -92,6 +92,8 @@ curve (log-scaled buffer size, with `ns` and `cycles` on separate axes) so the
 cache-hierarchy plateaus are easy to read. It has no build step and no runtime
 dependencies beyond a browser.
 
+![mlc latency viewer](docs/latency-viewer.png)
+
 The quickest path is to pipe `mlc` straight into `scripts/mlc-view`, which
 inlines the data into a standalone HTML report and opens it in your browser — no
 saving or file-picking:
