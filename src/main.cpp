@@ -1,5 +1,6 @@
 #include <argparse/argparse.hpp>
 
+#include <chrono>
 #include <format>
 #include <iostream>
 
@@ -30,7 +31,13 @@ int main(int argc, const char **argv) {
      * evenly spaced on a log axis and span L1 through DRAM without either
      * exploding in count or racing past the interesting boundaries. The
      * top end (128 MiB) is well beyond the 3 MiB L3 to capture DRAM. */
-    constexpr std::size_t num_jumps = 100'000'000;
+    /* Budget each point by wall time rather than a fixed jump count: a fixed
+     * count makes a DRAM load (~150 ns) cost ~100x an L1 load (~1.4 ns), so
+     * the slow tail dominated the whole run. The jump cap keeps fast points
+     * from spinning far past a stable sample. */
+    using namespace std::chrono_literals;
+    constexpr std::chrono::nanoseconds time_budget = 200ms;
+    constexpr std::size_t max_jumps = 100'000'000;
     std::cout
         << "buffer size (kb), average latency per load (ns), cycles per load\n";
     constexpr std::size_t max_buffer_size_kb = std::size_t{128} * 1024;
@@ -39,7 +46,7 @@ int main(int argc, const char **argv) {
         MmapArray<Node> buffer =
             generate_buffer(buffer_size_kb, use_huge_pages);
         auto [ns_per_load, cycles_per_load] =
-            pointer_chase(cpu_id, buffer, num_jumps);
+            pointer_chase(cpu_id, buffer, time_budget, max_jumps);
         std::cout << std::format("{}, {:.2f}, {:.2f}\n", buffer_size_kb,
                                  ns_per_load, cycles_per_load);
     }

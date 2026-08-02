@@ -67,23 +67,39 @@ MmapArray<Node> generate_buffer(std::size_t buffer_size_kb,
 }
 
 std::pair<double, double> pointer_chase(int cpu, std::span<const Node> nodes,
-                                        std::size_t num_jumps) {
+                                        std::chrono::nanoseconds time_budget,
+                                        std::size_t max_jumps) {
     pin_to_cpu(cpu);
 
     CycleCounter cycle_counter(cpu);
 
     const Node *node = nodes.data();
 
+    /* Chase in fixed-size batches, sampling the clock only between batches so
+     * the dependent-load loop itself stays a tight, uninstrumented chain. We
+     * keep going until the time budget is spent or the jump cap is hit. A slow
+     * DRAM buffer exhausts the budget in ~1M jumps while a fast L1 buffer runs
+     * up to the cap, so every point costs roughly the same wall time instead
+     * of ballooning with latency. The batch is small next to the budget, so
+     * the per-batch clock read adds negligible overhead. */
+    constexpr std::size_t batch = 100'000;
+
+    std::size_t num_jumps = 0;
+    std::chrono::steady_clock::time_point now;
+
     const auto start = std::chrono::steady_clock::now();
     cycle_counter.start();
 
-    for (std::size_t i = 0; i < num_jumps; i++) {
-        node = node->next;
-    }
+    do {
+        for (std::size_t i = 0; i < batch; i++) {
+            node = node->next;
+        }
+        num_jumps += batch;
+        now = std::chrono::steady_clock::now();
+    } while (now - start < time_budget && num_jumps < max_jumps);
 
     const std::size_t cycle_count = cycle_counter.stop();
-    const auto stop = std::chrono::steady_clock::now();
-    const std::chrono::duration<double, std::nano> duration = stop - start;
+    const std::chrono::duration<double, std::nano> duration = now - start;
 
     /* Shouldn't happen; this is just to prevent the compiler from optimizing
      * out node and the jumps */

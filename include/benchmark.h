@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <span>
 #include <utility>
@@ -22,8 +23,11 @@ void pin_to_cpu(int cpu_id);
 MmapArray<Node> generate_buffer(std::size_t buffer_size_kb,
                                 bool use_huge_pages);
 
-/* Pins to the given CPU, then performs pointer chasing over nodes for a total
- * of num_jumps. Returns the average per-load cost as a { nanoseconds, core
- * cycles } pair. */
+/* Pins to the given CPU, then performs pointer chasing over nodes until either
+ * time_budget elapses or max_jumps loads have been performed, whichever comes
+ * first. Slow (DRAM) regions therefore run far fewer jumps than fast (cache)
+ * regions, keeping per-point wall time bounded instead of scaling with latency.
+ * Returns the average per-load cost as a { nanoseconds, core cycles } pair. */
 std::pair<double, double> pointer_chase(int cpu, std::span<const Node> nodes,
-                                        std::size_t num_jumps);
+                                        std::chrono::nanoseconds time_budget,
+                                        std::size_t max_jumps);
